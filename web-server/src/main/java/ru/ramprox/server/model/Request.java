@@ -1,12 +1,18 @@
 package ru.ramprox.server.model;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Класс, инкапсулирующий запрос
  */
 public class Request {
+
     private RequestType type;
+
     private String requestedResource;
-    private String referer;
+
+    private Map<String, String> header = new HashMap<>();
 
     public RequestType getType() {
         return type;
@@ -24,12 +30,12 @@ public class Request {
         this.requestedResource = requestedResource;
     }
 
-    public String getReferer() {
-        return referer;
+    public void addHeader(String headerName, String value) {
+        header.put(headerName, value);
     }
 
-    public void setReferer(String referer) {
-        this.referer = referer;
+    public String getHeader(String headerName) {
+        return header.get(headerName);
     }
 
     public enum RequestType {

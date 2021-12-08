@@ -2,8 +2,7 @@ package ru.ramprox.server.util;
 
 import ru.ramprox.server.model.Request;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.Queue;
 
 /**
  * Класс, который парсит запрос
@@ -16,33 +15,34 @@ public class RequestParser {
      * @param request запрос в виде строки
      * @return объект типа Request, инкапсулирующий запрос
      */
-    public Request parseRequest(String request) {
-        List<String> lines = List.of(request.split("\n"));
-        if(lines.size() == 0) {
-            throw new IllegalStateException("Unknown request");
-        }
-        Request result = new Request();
-        parseFirstLine(result, lines.get(0));
-        parseHeaders(result, lines.subList(1, lines.size()));
-        return result;
-    }
-
-    private void parseFirstLine(Request request, String stringRequest) {
-        String[] parts = stringRequest.split(" ");
-        String requestType = parts[0];
-        if ("GET".equals(requestType)) {
-            request.setType(Request.RequestType.GET);
-            request.setRequestedResource(parts[1]);
-        } else {
-            throw new IllegalStateException("Unknown request");
+    public Request parseRequest(Queue<String> request) {
+        try {
+            Request result = new Request();
+            parseFirstLine(result, request);
+            parseHeaders(result, request);
+            return result;
+        } catch (IllegalArgumentException | ArrayIndexOutOfBoundsException ex) {
+            throw new IllegalStateException("Unknown request", ex);
         }
     }
 
-    private void parseHeaders(Request request, List<String> lines) {
-        lines.forEach(s -> {
-            if(s.startsWith("Referer: ")) {
-                request.setReferer(s.substring("Referer: ".length()));
+    private void parseFirstLine(Request request, Queue<String> requestLines) {
+        String[] parts = requestLines.poll().split(" ");
+        String requestTypeString = parts[0];
+        String requestedResource = parts[1];
+        Request.RequestType requestType = Request.RequestType.valueOf(requestTypeString);
+        request.setType(requestType);
+        request.setRequestedResource(requestedResource);
+    }
+
+    private void parseHeaders(Request request, Queue<String> lines) {
+        do {
+            String line = lines.poll();
+            if (line == null || line.equals("")) {
+                break;
             }
-        });
+            String[] header = line.split(": ");
+            request.addHeader(header[0], header[1]);
+        } while (true);
     }
 }

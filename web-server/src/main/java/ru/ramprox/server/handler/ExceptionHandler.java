@@ -37,25 +37,23 @@ public class ExceptionHandler {
      * @throws Exception - необработанное исключение
      */
     public Response handle(Request request, Exception ex) throws Exception {
-        Response response;
         if (ex instanceof FileNotFoundException) {
-            response = handleFileNotFoundException(request);
-        } else {
-            throw new Exception(ex);
+            return handleFileNotFoundException(request);
         }
-        return response;
+        throw ex;
     }
 
     /**
      * Обработка FileNotFoundException
-     * Если запрашиваемый ресурс (Например, "style.css") является результатом предыдущего запроса (Например,
-     * если html страница содержит следующее:
+     * Если запрашиваемый ресурс (Например, "style.css") является результатом запроса из другого ресурса
+     * (Например, если html страница содержит следующее:
      * <head>
      * <link ref="stylesheet" href="style.css">
      * ...
      * </head>
      * ...
-     * что отражается в заголовке Referer Запроса, то страница notFoundPage не возвращается, даже если она есть
+     * что отражается в заголовке Referer запроса),
+     * то страница notFoundPage не возвращается, даже если она есть
      *
      * @param request - Запрос, при котором возникло данное исключение
      * @return ответ на возникшее исключение
@@ -63,7 +61,7 @@ public class ExceptionHandler {
     private Response handleFileNotFoundException(Request request) {
         Response response = new Response();
         response.setStatus("404 NOT_FOUND");
-        if (request.getReferer() != null) {
+        if (request.getHeader("Referer") != null) {
             response.setContentType(ContentTypeResolver.APPLICATION_JSON);
             return response;
         }

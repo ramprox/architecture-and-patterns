@@ -1,5 +1,7 @@
 package ru.ramprox.server.config;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.ramprox.server.WebServer;
 
 import java.io.IOException;
@@ -15,6 +17,8 @@ public class Environment {
     private static final String DEFAULT_PATH_TO_STATIC = "classpath:/static";
 
     private static final Properties properties;
+
+    private static final Logger logger = LogManager.getLogger(Environment.class);
 
     /**
      * Происходит чтение и установка свойств
@@ -44,7 +48,7 @@ public class Environment {
                 properties.load(stream);
             }
         } catch (IOException ex) {
-            System.out.printf("Error read application.properties: %s", ex.getMessage());
+            logger.error("Error read application.properties: {}", ex.getMessage());
         }
     }
 

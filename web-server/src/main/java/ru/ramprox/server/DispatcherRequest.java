@@ -1,5 +1,7 @@
 package ru.ramprox.server;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.ramprox.server.handler.ExceptionHandler;
 import ru.ramprox.server.handler.RequestHandler;
 import ru.ramprox.server.model.Request;
@@ -8,6 +10,7 @@ import ru.ramprox.server.util.*;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Queue;
 
 public class DispatcherRequest {
 
@@ -15,6 +18,8 @@ public class DispatcherRequest {
     private final RequestParser requestParser;
     private final ExceptionHandler exceptionHandler;
     private final ResponseToStringBuilder responseToStringBuilder;
+
+    private static final Logger logger = LogManager.getLogger(DispatcherRequest.class);
 
     public DispatcherRequest() {
         requestParser = new RequestParser();
@@ -28,20 +33,20 @@ public class DispatcherRequest {
 
     public void dispatchRequest(Socket socket) {
         try (Channel channel = new Channel(socket)) {
-            String stringRequest = channel.readRequest();
+            Queue<String> stringRequest = channel.readRequest();
             if (stringRequest != null) {
                 Response response = handleRequest(stringRequest);
                 String stringResponse = responseToStringBuilder.build(response);
                 channel.sendResponse(stringResponse);
             }
         } catch (Exception ex) {
-            System.out.printf("Error handle request: %s\n", ex.getMessage());
+            logger.error("Error handle request: {}", ex.getMessage());
         } finally {
             closeConnection(socket);
         }
     }
 
-    private Response handleRequest(String stringRequest) throws Exception {
+    private Response handleRequest(Queue<String> stringRequest) throws Exception {
         Request request = requestParser.parseRequest(stringRequest);
         Response response;
         try {
@@ -61,8 +66,8 @@ public class DispatcherRequest {
         try {
             socket.close();
         } catch (IOException ex) {
-            System.out.printf("Socket close error: %s\n", ex.getMessage());
+            logger.error("Socket close error: {}", ex.getMessage());
         }
-        System.out.printf("Client disconnected: %s!\n", socket.getInetAddress());
+        logger.info("Client disconnected: {}", socket.getInetAddress());
     }
 }
