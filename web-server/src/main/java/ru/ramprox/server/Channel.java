@@ -1,10 +1,14 @@
 package ru.ramprox.server;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -14,14 +18,15 @@ import java.util.Queue;
 public class Channel implements AutoCloseable {
 
     private final BufferedReader in;
-    private final PrintWriter out;
+    private final OutputStream out;
 
-    private static final Logger logger = LogManager.getLogger(Channel.class);
+    private static final Logger logger = LoggerFactory.getLogger(Channel.class);
 
     public Channel(Socket socket) throws IOException {
         try {
-            this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            this.out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
+            this.in = new BufferedReader(new InputStreamReader(socket.getInputStream(),
+                    StandardCharsets.UTF_8));
+            this.out = socket.getOutputStream();
         } catch (IOException ex) {
             logger.error("Error channel initialization: {}", ex.getMessage());
             throw ex;
@@ -37,20 +42,62 @@ public class Channel implements AutoCloseable {
     public Queue<String> readRequest() throws IOException {
         while (!in.ready()) ;
         Queue<String> result = new LinkedList<>();
-        while (in.ready()) {
-            String line = in.readLine();
-            logger.info(line);
-            result.add(line);
-        }
+        readHeaders(result);
+        readPayload(result);
         return result;
     }
 
     /**
-     * Отправка ответа клиенту
+     * Чтение заголовков
+     *
+     * @param queue - очередь куда записываются результаты чтения
+     * @throws IOException
+     */
+    private void readHeaders(Queue<String> queue) throws IOException {
+        do {
+            String line = in.readLine();
+            logger.info(line);
+            queue.add(line);
+            if (line.equals("")) {
+                break;
+            }
+        } while (in.ready());
+    }
+
+    /**
+     * Чтение тела запроса
+     *
+     * @param queue - очередь куда записываются результаты чтения
+     * @throws IOException
+     */
+    private void readPayload(Queue<String> queue) throws IOException {
+        StringBuilder payload = new StringBuilder();
+        int n;
+        while (in.ready()) {
+            n = in.read();
+            payload.append((char) n);
+        }
+        if (payload.length() > 0) {
+            queue.add(payload.toString());
+        }
+    }
+
+    /**
+     * Отправка ответа клиенту в виде строки
      *
      * @param response - отправляемый ответ
      */
-    public void sendResponse(String response) {
+    public void sendResponse(String response) throws IOException {
+        sendResponse(response.getBytes());
+    }
+
+    /**
+     * Отправка ответа клиенту в виде байтов
+     *
+     * @param response - отправляемый ответ
+     * @throws IOException
+     */
+    public void sendResponse(byte[] response) throws IOException {
         out.write(response);
         out.flush();
     }
@@ -66,8 +113,12 @@ public class Channel implements AutoCloseable {
         } catch (IOException ex) {
             logger.error("Error close input reader: {}", ex.getMessage());
         }
-        if (out != null) {
-            out.close();
+        try {
+            if (out != null) {
+                out.close();
+            }
+        } catch (IOException ex) {
+            logger.error("Error close output writer: {}", ex.getMessage());
         }
     }
 }

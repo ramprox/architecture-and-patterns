@@ -3,10 +3,12 @@ package ru.ramprox.server.handler;
 import ru.ramprox.server.config.Environment;
 import ru.ramprox.server.config.PropertyName;
 import ru.ramprox.server.model.Request;
+import ru.ramprox.server.model.RequestHeaderName;
 import ru.ramprox.server.model.Response;
-import ru.ramprox.server.util.ContentTypeResolver;
-import ru.ramprox.server.util.ResourceResolver;
-import ru.ramprox.server.util.StaticResourceReader;
+import ru.ramprox.server.model.ResponseHeaderName;
+import ru.ramprox.server.service.ContentTypeResolver;
+import ru.ramprox.server.service.ResourceResolver;
+import ru.ramprox.server.service.StaticResourceReader;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -60,23 +62,23 @@ public class ExceptionHandler {
      */
     private Response handleFileNotFoundException(Request request) {
         Response response = new Response();
-        response.setStatus("404 NOT_FOUND");
-        if (request.getHeader("Referer") != null) {
-            response.setContentType(ContentTypeResolver.APPLICATION_JSON);
+        response.setHeader(ResponseHeaderName.Status, Response.Status.NOT_FOUND.toString());
+        if (request.getHeader(RequestHeaderName.REFERER) != null) {
+            response.setHeader(ResponseHeaderName.CONTENT_TYPE, ContentTypeResolver.APPLICATION_JSON);
             return response;
         }
         String notFoundPage = getNotFoundPage();
         if (notFoundPage.isEmpty()) {
-            response.setContentType(ContentTypeResolver.APPLICATION_JSON);
+            response.setHeader(ResponseHeaderName.CONTENT_TYPE, ContentTypeResolver.APPLICATION_JSON);
             return response;
         }
         String path = resourceResolver.resolve(notFoundPage);
         try {
             String content = staticResourceReader.read(path);
-            response.setContent(content);
-            response.setContentType(contentTypeResolver.resolve(path));
+            response.setBody(content);
+            response.setHeader(ResponseHeaderName.CONTENT_TYPE, contentTypeResolver.resolve(path) + "; charset=utf-8");
         } catch (IOException e) {
-            response.setContentType(ContentTypeResolver.APPLICATION_JSON);
+            response.setHeader(ResponseHeaderName.CONTENT_TYPE, ContentTypeResolver.APPLICATION_JSON);
         }
         return response;
     }

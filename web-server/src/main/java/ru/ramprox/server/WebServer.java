@@ -1,7 +1,7 @@
 package ru.ramprox.server;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.ramprox.server.config.Environment;
 import ru.ramprox.server.config.PropertyName;
 
@@ -13,10 +13,10 @@ public class WebServer {
 
     private final DispatcherRequest dispatcherRequest;
 
-    private static final Logger logger = LogManager.getLogger(WebServer.class);
+    private static final Logger logger = LoggerFactory.getLogger(WebServer.class);
 
     public WebServer() {
-        dispatcherRequest = new DispatcherRequest();
+        this.dispatcherRequest = new DispatcherRequest();
     }
 
     /**
@@ -28,14 +28,14 @@ public class WebServer {
         int port = Integer.parseInt(Environment.getProperty(PropertyName.PORT));
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             logger.info("Server started on port: {}!", port);
-
             while (true) {
                 Socket socket = serverSocket.accept();
                 logger.info("New client connected: {}!", socket.getInetAddress());
                 new Thread(() -> dispatcherRequest.dispatchRequest(socket)).start();
             }
         } catch (IOException ex) {
-            logger.error("Error server initializing: {}", ex.getMessage());
+            logger.error("Error server initialization: {}", ex.getMessage());
         }
     }
+
 }

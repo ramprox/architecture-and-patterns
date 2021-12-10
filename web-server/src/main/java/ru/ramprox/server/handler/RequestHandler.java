@@ -2,18 +2,17 @@ package ru.ramprox.server.handler;
 
 import ru.ramprox.server.model.Request;
 import ru.ramprox.server.model.Response;
-import ru.ramprox.server.util.ContentTypeResolver;
-import ru.ramprox.server.util.ResourceResolver;
-import ru.ramprox.server.util.ResponseToStringBuilder;
-import ru.ramprox.server.util.StaticResourceReader;
+import ru.ramprox.server.model.ResponseHeaderName;
+import ru.ramprox.server.service.ContentTypeResolver;
+import ru.ramprox.server.service.ResourceResolver;
+import ru.ramprox.server.service.StaticResourceReader;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 /**
  * Класс обработчика запросов
  */
-public class RequestHandler {
+public class RequestHandler implements Handler {
 
     private final ResourceResolver resourceResolver;
     private final ContentTypeResolver contentTypeResolver;
@@ -38,12 +37,10 @@ public class RequestHandler {
      * содержимое статического ресурса, если он найден
      * @throws IOException - возникает при ошибках во время чтения статического ресурса
      */
-    public Response handleRequest(Request request) throws IOException {
-        Response response = new Response();
+    public void handleRequest(Request request, Response response) throws IOException {
         if (request.getType() == Request.RequestType.GET) {
-            return handleGetRequest(request);
+            handleGetRequest(request, response);
         }
-        return response;
     }
 
     /**
@@ -54,14 +51,18 @@ public class RequestHandler {
      * содержимое статического ресурса, если он найден
      * @throws IOException - возникает при ошибках во время чтения статического ресурса
      */
-    private Response handleGetRequest(Request request) throws IOException {
-        Response response = new Response();
+    private void handleGetRequest(Request request, Response response) throws IOException {
         String pathToResource = resourceResolver.resolve(request.getRequestedResource());
-        String content = staticResourceReader.read(pathToResource);
-        response.setStatus("200 OK");
-        response.setContent(content);
-        response.setContentType(contentTypeResolver.resolve(pathToResource));
-        return response;
+        String contentType = contentTypeResolver.resolve(pathToResource);
+        Object body = null;
+        if(contentType.contains("text")) {
+            body = staticResourceReader.read(pathToResource);
+            response.setHeader(ResponseHeaderName.CONTENT_TYPE, contentType + "; charset=utf-8");
+        } else if (contentType.contains("image")) {
+            body = staticResourceReader.readBytes(pathToResource);
+            response.setHeader(ResponseHeaderName.CONTENT_TYPE, contentType);
+        }
+        response.setHeader(ResponseHeaderName.Status, Response.Status.OK.toString());
+        response.setBody(body);
     }
-
 }

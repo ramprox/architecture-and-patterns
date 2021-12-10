@@ -1,34 +1,47 @@
 package ru.ramprox.server.model;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Класс, инкапсулирующий ответ
  */
 public class Response {
-    private String status;
-    private String contentType;
-    private String content;
+    private Object body;
+    private Map<Object, Object> headers = new HashMap<>();
 
-    public String getStatus() {
-        return status;
+    public Object getContent() {
+        return body;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setBody(Object body) {
+        this.body = body;
     }
 
-    public String getContentType() {
-        return contentType;
+    public void setHeader(Object key, Object value) {
+        headers.put(key, value);
     }
 
-    public void setContentType(String contentType) {
-        this.contentType = contentType;
+    public Object getHeader(Object key) {
+        return headers.get(key);
     }
 
-    public String getContent() {
-        return content;
+    public Map<Object, Object> getHeaders() {
+        return Collections.unmodifiableMap(headers);
     }
 
-    public void setContent(String content) {
-        this.content = content;
+    public enum Status {
+        OK(200), NOT_FOUND(404), REDIRECT(302);
+        private int code;
+
+        Status(int code) {
+            this.code = code;
+        }
+
+        @Override
+        public String toString() {
+            return code + " " + super.toString();
+        }
     }
 }

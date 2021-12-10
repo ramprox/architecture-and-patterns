@@ -1,4 +1,4 @@
-package ru.ramprox.server.util;
+package ru.ramprox.server.service;
 
 import ru.ramprox.server.config.Environment;
 import ru.ramprox.server.config.PropertyName;

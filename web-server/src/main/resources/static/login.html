@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="./css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="./css/styles.css"/>
+    <script src="./js/bootstrap.min.js"></script>
+    <title>Login</title>
+</head>
+<body class="text-center">
+<div class="row" style="height: 90vh;">
+    <form class="p-2 text-center m-auto border border-info rounded shadow bg-light" style="width: 330px;"
+    action="/login_processing" method="post">
+        <h1 class="h3 mb-3 font-weight-normal">Please sign in</h1>
+        <label for="username" class="sr-only" hidden>Login</label>
+        <input type="text" id="username" name="username" class="form-control mb-3"
+               placeholder="Login" required autofocus>
+        <label for="password" class="sr-only" hidden>Password</label>
+        <input type="password" id="password" name="password" class="form-control mb-3"
+               placeholder="Password" required>
+        <button class="btn btn-primary btn-block mb-3 me-3" type="submit">Sign in</button>
+        <a href="/register">Register</a>
+        <p class="text-muted mb-0">© 2021</p>
+    </form>
+</div>
+</body>
+</html>

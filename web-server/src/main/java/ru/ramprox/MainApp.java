@@ -1,14 +1,14 @@
 package ru.ramprox;
 
-import ru.ramprox.server.WebServer;
+import ru.ramprox.server.Application;
 
 public class MainApp {
     /**
      * Точка входа в приложение
-     * Запуск сервера
+     * Запуск приложения
      * @param args - аргументы командной строки
      */
     public static void main(String[] args) {
-        new WebServer().start();
+        Application.run(args);
     }
 }

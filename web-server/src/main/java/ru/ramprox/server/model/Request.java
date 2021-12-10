@@ -14,6 +14,8 @@ public class Request {
 
     private Map<String, String> header = new HashMap<>();
 
+    private String body;
+
     public RequestType getType() {
         return type;
     }
@@ -38,7 +40,19 @@ public class Request {
         return header.get(headerName);
     }
 
+    public String deleteHeader(String headerName) {
+        return header.remove(headerName);
+    }
+
+    public String getBody() {
+        return body;
+    }
+
+    public void setBody(String body) {
+        this.body = body;
+    }
+
     public enum RequestType {
-        GET
+        GET, POST
     }
 }
