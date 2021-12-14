@@ -1,7 +1,8 @@
-package ru.ramprox.server;
+package ru.ramprox.server.service.simpleserviceimpl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.ramprox.server.service.interfaces.Channel;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -9,20 +10,21 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 
 /**
  * Класс инкапсулирующий канал для чтения запроса и отправки ответа клиенту
  */
-public class Channel implements AutoCloseable {
+class SocketChannel implements Channel {
 
     private final BufferedReader in;
     private final OutputStream out;
 
-    private static final Logger logger = LoggerFactory.getLogger(Channel.class);
+    private static final Logger logger = LoggerFactory.getLogger(SocketChannel.class);
 
-    public Channel(Socket socket) throws IOException {
+    SocketChannel(Socket socket) throws IOException {
         try {
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream(),
                     StandardCharsets.UTF_8));
@@ -71,14 +73,18 @@ public class Channel implements AutoCloseable {
      * @throws IOException
      */
     private void readPayload(Queue<String> queue) throws IOException {
-        StringBuilder payload = new StringBuilder();
+        StringBuilder payload = null;
         int n;
         while (in.ready()) {
             n = in.read();
+            if(payload == null) {
+                payload = new StringBuilder();
+            }
             payload.append((char) n);
         }
-        if (payload.length() > 0) {
-            queue.add(payload.toString());
+        if (payload != null && payload.length() > 0) {
+            String[] lines = payload.toString().split(" ");
+            Arrays.stream(lines).forEach(queue::add);
         }
     }
 

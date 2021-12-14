@@ -1,10 +1,11 @@
-package ru.ramprox.server.service;
+package ru.ramprox.server.service.simpleserviceimpl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.ramprox.server.config.Environment;
 import ru.ramprox.server.config.PropertyName;
 import ru.ramprox.server.model.Session;
+import ru.ramprox.server.service.interfaces.SessionService;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -15,15 +16,15 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
 
-public class SessionService {
+class SessionServiceImpl implements SessionService {
 
     private Map<UUID, Session> sessions = new ConcurrentHashMap<>();
 
     private ScheduledExecutorService executorService;
     private Semaphore semaphore = new Semaphore(1);
-    private static final Logger logger = LoggerFactory.getLogger(SessionService.class);
+    private static final Logger logger = LoggerFactory.getLogger(SessionServiceImpl.class);
 
-    public SessionService() {
+    SessionServiceImpl() {
         createSessionStorage();
         loadSessionsFromStorage();
         Runtime.getRuntime().addShutdownHook(new Thread(this::saveSessionsInStorage));
@@ -31,10 +32,12 @@ public class SessionService {
         executorService.scheduleAtFixedRate(this::periodicalClearSession, 0, 10, TimeUnit.MINUTES);
     }
 
+    @Override
     public void add(UUID uuid, Session session) {
         sessions.put(uuid, session);
     }
 
+    @Override
     public Session getSession(UUID uuid) {
         return sessions.get(uuid);
     }
@@ -74,6 +77,7 @@ public class SessionService {
     /**
      * Сохранение сессии в хранилище
      */
+    @Override
     public void saveSessionsInStorage() {
         executorService.shutdown();
         try {

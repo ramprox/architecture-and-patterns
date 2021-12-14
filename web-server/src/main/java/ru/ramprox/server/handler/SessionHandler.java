@@ -1,48 +1,62 @@
 package ru.ramprox.server.handler;
 
 import ru.ramprox.server.model.*;
-import ru.ramprox.server.service.SessionService;
+import ru.ramprox.server.service.interfaces.SessionService;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Класс, отвечающий за обработку запросов с сессией
  */
-public class SessionHandler implements Handler {
+class SessionHandler implements RequestHandler {
 
     private final SessionService sessionService;
-    private final Handler nextHandler;
+    private final RequestHandler nextHandler;
 
-    public SessionHandler(SessionService sessionService, Handler nextHandler) {
+    SessionHandler(SessionService sessionService, RequestHandler nextHandler) {
         this.sessionService = sessionService;
         this.nextHandler = nextHandler;
     }
 
-    public void handleRequest(Request request, Response response) throws Exception {
-        String cookie = request.getHeader(RequestHeaderName.COOKIE);
-        if (cookie == null) {
-            addCookieInResponse(response);
+    @Override
+    public void handle(HttpRequest request, HttpResponse.Builder responseBuilder) throws Exception {
+        Optional<Cookie> jSessionIdCookie = request.getCookies()
+                .stream()
+                .filter(value -> value.getName().equals(Cookie.JSESSION_ID))
+                .findFirst();
+
+        if (!jSessionIdCookie.isPresent()) {
+            addCookieInResponse(responseBuilder);
         } else {
-            UUID uuid = UUID.fromString(cookie.split("=")[1]);
+            Cookie cookie = jSessionIdCookie.get();
+            UUID uuid = UUID.fromString(cookie.getValue());
             Session session = sessionService.getSession(uuid);
             if (session == null) {
-                addCookieInResponse(response);
-                request.deleteHeader(RequestHeaderName.COOKIE);
+                addCookieInResponse(responseBuilder);
+                setZeroCookie(responseBuilder, cookie);
             }
         }
-        nextHandler.handleRequest(request, response);
+        nextHandler.handle(request, responseBuilder);
     }
 
-    private void addCookieInResponse(Response response) {
+    private void addCookieInResponse(HttpResponse.Builder responseBuilder) {
         UUID uuid = UUID.randomUUID();
         Session session = new Session();
-        Cookie cookie = new Cookie("JSESSIONID");
-        cookie.setValue(uuid.toString());
-        cookie.setPath("/");
-        cookie.setDomain("localhost");
-        cookie.setHttpOnly(true);
-        cookie.setExpires(session.getExpireDate());
+        Cookie cookie = new Cookie.Builder(Cookie.JSESSION_ID, uuid.toString())
+                .withDomain("localhost")
+                .withPath("/")
+                .withExpires(session.getExpireDate())
+                .withHttpOnly()
+                .build();
         sessionService.add(uuid, session);
-        response.setHeader(ResponseHeaderName.SET_COOKIE, cookie);
+        responseBuilder.withCookie(cookie);
+    }
+
+    private void setZeroCookie(HttpResponse.Builder builder, Cookie cookie) {
+        Cookie zeroCookie = new Cookie.Builder(cookie.getName(), cookie.getValue())
+                .withMaxAge(0)
+                .build();
+        builder.withCookie(zeroCookie);
     }
 }

@@ -2,7 +2,6 @@ package ru.ramprox.server.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.ramprox.server.WebServer;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -47,7 +46,7 @@ public class Environment {
      */
     private static void loadFromClassPath() {
         try {
-            InputStream stream = WebServer.class.getResourceAsStream(
+            InputStream stream = Environment.class.getResourceAsStream(
                     DefaultSettings.DEFAULT_PATH_TO_CONFIG.substring(PropertyName.CLASSPATH_PREFIX.length()));
             if (stream != null) {
                 properties.load(stream);
@@ -76,7 +75,6 @@ public class Environment {
             return;
         }
         String configLocation = args.remove(PropertyName.CONFIG_LOCATION);
-        ;
         if (configLocation != null) {
             loadFromUserDefinedResource(configLocation);
         }

@@ -1,16 +1,18 @@
-package ru.ramprox.server.service;
+package ru.ramprox.server.service.simpleserviceimpl;
+
+import ru.ramprox.server.service.interfaces.ContentTypeResolver;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class ContentTypeResolver {
+class ContentTypeResolverImpl implements ContentTypeResolver {
 
-    public static final String APPLICATION_JSON = "application/json";
+    private static final String APPLICATION_JSON = "application/json";
 
     private final Map<String, String> textContentTypes = new HashMap<>();
     private final Map<String, String> imageContentTypes = new HashMap<>();
 
-    public ContentTypeResolver() {
+    ContentTypeResolverImpl() {
         initializeContentTypes();
     }
 
@@ -23,6 +25,7 @@ public class ContentTypeResolver {
         imageContentTypes.put(".jpeg", "image/jpeg");
     }
 
+    @Override
     public String resolve(String path) {
         int dotIndex = path.lastIndexOf('.');
         String extension = path.substring(dotIndex);

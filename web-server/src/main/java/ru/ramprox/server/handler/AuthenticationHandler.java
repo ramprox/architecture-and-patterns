@@ -5,30 +5,28 @@ import org.slf4j.LoggerFactory;
 import ru.ramprox.server.config.Environment;
 import ru.ramprox.server.config.PropertyName;
 import ru.ramprox.server.model.*;
-import ru.ramprox.server.service.SessionService;
+import ru.ramprox.server.service.interfaces.SessionService;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Класс,ответственный за аутентификацию клиента
  */
-public class AuthenticationHandler implements Handler {
+class AuthenticationHandler implements RequestHandler {
 
-    private final Handler nextHandler;
+    private final RequestHandler nextHandler;
     private final SessionService sessionService;
 
     private final Set<String> pagesRequiredAuthentication = new HashSet<>();
-    private static final String LOGIN_PROCESSING = "/login_processing";
+    private static final String LOGIN_PROCESSING_PAGE = "/login_processing";
+    private static final String MAIN_PAGE = "/index.html";
+    private static final String LOGIN_PAGE= "/login.html";
 
     private static final String USER_ATTRIBUTE = "User";
-    private static final String REQUESTED_PAGE_ATTRIBUTE = "Requested page";
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationHandler.class);
 
-    public AuthenticationHandler(SessionService sessionService, Handler nextHandler) {
+    AuthenticationHandler(SessionService sessionService, RequestHandler nextHandler) {
         this.nextHandler = nextHandler;
         this.sessionService = sessionService;
         String[] authPages = Environment.getProperty(PropertyName.PAGES_REQUIRED_AUTH).split(";");
@@ -38,21 +36,22 @@ public class AuthenticationHandler implements Handler {
     /**
      * Обработка запроса
      *
-     * @param request
-     * @param response
-     * @throws Exception
+     * @param request - Принятый запрос
+     * @param responseBuilder - Builder ответа
+     * @throws Exception - ошибка обработки
      */
-    public void handleRequest(Request request, Response response) throws Exception {
+    @Override
+    public void handle(HttpRequest request, HttpResponse.Builder responseBuilder) throws Exception {
         try {
-            if (request.getRequestedResource().equals(LOGIN_PROCESSING)) {
-                loginProcessing(request, response);
+            if (request.getResource().equals(LOGIN_PROCESSING_PAGE)) {
+                loginProcessing(request, responseBuilder);
                 return;
             }
-            if (pagesRequiredAuthentication.contains(request.getRequestedResource())) {
-                handleRequestRequiredAuthentication(request, response);
-            } else {
-                nextHandler.handleRequest(request, response);
+            if (pagesRequiredAuthentication.contains(request.getResource())) {
+                handleRequestRequiredAuthentication(request, responseBuilder);
+                return;
             }
+            nextHandler.handle(request, responseBuilder);
         } catch (IllegalArgumentException ex) {
             logger.error("Can't parse cookie header from request {}", ex.getMessage());
         }
@@ -61,118 +60,104 @@ public class AuthenticationHandler implements Handler {
     /**
      * Обработка аутентификации
      *
-     * @param request
-     * @param response
-     * @throws Exception
+     * @param request - Запрос, содержащий credentials
+     * @param responseBuilder - Builder ответа
      */
-    private void loginProcessing(Request request, Response response) throws Exception {
+    private void loginProcessing(HttpRequest request, HttpResponse.Builder responseBuilder) {
         String body = request.getBody();
-        Credentials credentials = parseToCredentials(body);
+        Credentials credentials = convertToCredentials(body);
         User user = new User(credentials.getUsername(), true);
-        String cookieInRequest = request.getHeader(RequestHeaderName.COOKIE);
-        UUID uuid = parseToUUID(cookieInRequest);
-        Session session = sessionService.getSession(uuid);
-        session.addAttribute(USER_ATTRIBUTE, user);
-        redirectToRequestedPage(request, response, session);
+        Set<Cookie> cookies = request.getCookies();
+        Optional<Cookie> optJSessionCookie = getCookieByName(cookies, Cookie.JSESSION_ID);
+        if(optJSessionCookie.isPresent()) {
+            UUID uuid = UUID.fromString(optJSessionCookie.get().getValue());
+            Session session = sessionService.getSession(uuid);
+            session.addAttribute(USER_ATTRIBUTE, user);
+            Optional<Cookie> optPageCookie = getCookieByName(cookies, Cookie.REQUESTED_PAGE);
+            if(optPageCookie.isPresent()) {
+                Cookie requestedPageCookie = optPageCookie.get();
+                setZeroCookie(responseBuilder, requestedPageCookie);
+                redirectToPage(responseBuilder, requestedPageCookie.getValue());
+            } else {
+                redirectToPage(responseBuilder, MAIN_PAGE);
+            }
+        }
     }
 
     /**
-     * ОБработка запросов, требующих аутентификации
+     * Обработка запросов, требующих аутентификацию
      *
-     * @param request
-     * @param response
-     * @throws Exception
+     * @param request - Запрос, требующий аутентификацию
+     * @param responseBuilder - Builder ответа
+     * @throws Exception - ошибка обработки
      */
-    private void handleRequestRequiredAuthentication(Request request, Response response) throws Exception {
-        String cookieInRequest = request.getHeader(RequestHeaderName.COOKIE);
-        if (cookieInRequest == null) {
-            handleWithoutCookieInRequest(request, response);
+    private void handleRequestRequiredAuthentication(HttpRequest request, HttpResponse.Builder responseBuilder) throws Exception {
+        Set<Cookie> cookies = request.getCookies();
+        Optional<Cookie> jSessionIdCookie = getCookieByName(cookies, Cookie.JSESSION_ID);
+        if (!jSessionIdCookie.isPresent()) {
+            Cookie redirectCookie =
+                    new Cookie.Builder(Cookie.REQUESTED_PAGE, request.getResource())
+                    .build();
+            responseBuilder.withCookie(redirectCookie);
+            redirectToPage(responseBuilder, LOGIN_PAGE);
             return;
         }
-        UUID uuid = parseToUUID(cookieInRequest);
+        UUID uuid = UUID.fromString(jSessionIdCookie.get().getValue());
         Session session = sessionService.getSession(uuid);
-        User user = (User) session.getAttribute(USER_ATTRIBUTE);
-        if (user != null && user.isAuthenticated()) {
-            handleUserAuthenticated(request, response, session);
-            Object body = response.getContent();
-            if (body instanceof String) {
-                String bodyStr = (String)body;
-                response.setBody(bodyStr.replaceAll("principal", user.getName()));
+        if(session != null) {
+            User user = (User) session.getAttribute(USER_ATTRIBUTE);
+            if (user != null && user.isAuthenticated()) {
+                handleAuthenticatedUser(request, responseBuilder, cookies);
+            } else {
+                redirectToLoginPage(request, responseBuilder);
             }
         } else {
-            session.addAttribute(REQUESTED_PAGE_ATTRIBUTE, request.getRequestedResource());
-            redirectToLoginPage(response);
+            redirectToLoginPage(request, responseBuilder);
         }
     }
 
-    /**
-     * Обработка запроса, если в нем нет Cookies
-     * @param request
-     * @param response
-     */
-    private void handleWithoutCookieInRequest(Request request, Response response) {
-        Cookie cookieInResponse = (Cookie) response.getHeader(ResponseHeaderName.SET_COOKIE);
-        UUID uuid = UUID.fromString(cookieInResponse.getValue());
-        Session session = sessionService.getSession(uuid);
-        session.addAttribute(REQUESTED_PAGE_ATTRIBUTE, request.getRequestedResource());
-        redirectToLoginPage(response);
-    }
-
-    /**
-     * Обработка запроса клиента, прошедшего аутентификацию
-     * @param request
-     * @param response
-     * @param session
-     * @throws Exception
-     */
-    private void handleUserAuthenticated(Request request, Response response, Session session) throws Exception {
-        String requestedResource = (String) session.deleteAttribute(REQUESTED_PAGE_ATTRIBUTE);
-        if (requestedResource != null) {
-            request.setRequestedResource(requestedResource);
+    private void handleAuthenticatedUser(HttpRequest request, HttpResponse.Builder responseBuilder, Set<Cookie> cookies) throws Exception {
+        Optional<Cookie> requestedPageCookie = getCookieByName(cookies, Cookie.REQUESTED_PAGE);
+        if(requestedPageCookie.isPresent()) {
+            Cookie cookie = requestedPageCookie.get();
+            setZeroCookie(responseBuilder, cookie);
+            redirectToPage(responseBuilder, cookie.getValue());
+        } else {
+            nextHandler.handle(request, responseBuilder);
         }
-        nextHandler.handleRequest(request, response);
     }
 
-    /**
-     * Парсинг строки в UUID
-     * @param cookieHeader
-     * @return
-     */
-    private static UUID parseToUUID(String cookieHeader) {
-        String[] args = cookieHeader.split("=");
-        return UUID.fromString(args[1]);
+    private void redirectToLoginPage(HttpRequest request, HttpResponse.Builder builder) {
+        Cookie redirectCookie =
+                new Cookie.Builder(Cookie.REQUESTED_PAGE, request.getResource())
+                        .build();
+        builder.withCookie(redirectCookie);
+        redirectToPage(builder, LOGIN_PAGE);
     }
 
-    /**
-     * Перенаправление в страницу логина
-     * @param response
-     */
-    private void redirectToLoginPage(Response response) {
-        response.setHeader(ResponseHeaderName.LOCATION, "/login.html");
-        response.setHeader(ResponseHeaderName.Status, Response.Status.REDIRECT);
+    private void redirectToPage(HttpResponse.Builder responseBuilder, String page) {
+        responseBuilder
+                .withHeader(ResponseHeaderName.LOCATION, page)
+                .withStatus(HttpResponseStatus.REDIRECT);
     }
 
-    /**
-     * Перенаправление в запрошенную страницу после аутентификации
-     * @param request
-     * @param response
-     * @param session
-     * @throws Exception
-     */
-    private void redirectToRequestedPage(Request request, Response response, Session session) throws Exception {
-        response.setHeader(ResponseHeaderName.LOCATION, session.deleteAttribute(REQUESTED_PAGE_ATTRIBUTE));
-        response.setHeader(ResponseHeaderName.Status, Response.Status.REDIRECT);
-    }
-
-    /**
-     * Парсинг лагина и пароля из тела запроса
-     * @param body
-     * @return
-     */
-    private Credentials parseToCredentials(String body) {
+    private Credentials convertToCredentials(String body) {
         String[] args = body.split("&");
         String username = args[0].split("=")[1];
         String password = args[1].split("=")[1];
         return new Credentials(username, password);
+    }
+
+    private Optional<Cookie> getCookieByName(Set<Cookie> cookies, String name) {
+        return cookies.stream()
+                .filter(cookie -> cookie.getName().equals(name))
+                .findFirst();
+    }
+
+    private void setZeroCookie(HttpResponse.Builder builder, Cookie cookie) {
+        Cookie zeroCookie = new Cookie.Builder(cookie.getName(), cookie.getValue())
+                .withMaxAge(0)
+                .build();
+        builder.withCookie(zeroCookie);
     }
 }

@@ -3,6 +3,12 @@ package ru.ramprox.server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.ramprox.server.config.Environment;
+import ru.ramprox.server.dispatcher.DispatcherRequestFactory;
+import ru.ramprox.server.handler.HandlerFactory;
+import ru.ramprox.server.service.interfaces.RequestParser;
+import ru.ramprox.server.service.simpleserviceimpl.ServiceFactory;
+import ru.ramprox.server.webserver.Server;
+import ru.ramprox.server.webserver.ServerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,7 +29,10 @@ public class Application {
     public static void run(String[] args) {
         printBanner();
         Environment.loadSettings(args);
-        new WebServer().start();
+        Factory factory = new Factory();
+        Server server = factory.getServerFactory().getServer();
+        Runtime.getRuntime().addShutdownHook(new Thread(server::stop));
+        server.start();
     }
 
     /**
@@ -34,7 +43,7 @@ public class Application {
              BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
             reader.lines().forEach(System.out::println);
         } catch (IOException ex) {
-            logger.error("Can't load banner: {}", ex.getMessage());
+            logger.info("Can't load banner: {}", ex.getMessage());
         }
     }
 }

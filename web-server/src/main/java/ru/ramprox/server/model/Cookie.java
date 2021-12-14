@@ -20,8 +20,12 @@ public class Cookie implements Serializable {
             DateTimeFormatter.ofPattern("E, dd MMM yyyy HH:mm:ss 'GMT'",
                     new Locale("en", "EN")).withZone(ZoneOffset.UTC);
 
-    public Cookie(String name) {
+    public static final String JSESSION_ID = "JSESSIONID";
+    public static final String REQUESTED_PAGE = "RequestedPage";
+
+    public Cookie(String name, String value) {
         this.name = name;
+        this.value = value;
     }
 
     public String getName() {
@@ -32,48 +36,24 @@ public class Cookie implements Serializable {
         return value;
     }
 
-    public void setValue(String value) {
-        this.value = value;
-    }
-
     public String getDomain() {
         return domain;
-    }
-
-    public void setDomain(String domain) {
-        this.domain = domain;
     }
 
     public LocalDateTime getExpires() {
         return expires;
     }
 
-    public void setExpires(LocalDateTime expires) {
-        this.expires = expires;
-    }
-
     public long getMaxAge() {
         return maxAge;
-    }
-
-    public void setMaxAge(long maxAge) {
-        this.maxAge = maxAge;
     }
 
     public String getPath() {
         return path;
     }
 
-    public void setPath(String path) {
-        this.path = path;
-    }
-
     public boolean isHttpOnly() {
         return httpOnly;
-    }
-
-    public void setHttpOnly(boolean httpOnly) {
-        this.httpOnly = httpOnly;
     }
 
     @Override
@@ -114,5 +94,50 @@ public class Cookie implements Serializable {
         int result = name.hashCode();
         result = 31 * result + value.hashCode();
         return result;
+    }
+
+    public static class Builder {
+        private Cookie cookie;
+
+        public Builder(String name, String value) {
+            this.cookie = new Cookie(name, value);
+        }
+
+        public Builder withDomain(String domain) {
+            this.cookie.domain = domain;
+            return this;
+        }
+
+        public Builder withExpires(LocalDateTime expires) {
+            this.cookie.expires = expires;
+            return this;
+        }
+
+        public Builder withMaxAge(long maxAge) {
+            this.cookie.maxAge = maxAge;
+            return this;
+        }
+
+        public Builder withPath(String path) {
+            this.cookie.path = path;
+            return this;
+        }
+
+        public Builder withHttpOnly() {
+            this.cookie.httpOnly = true;
+            return this;
+        }
+
+        public Cookie build() {
+            String name = this.cookie.getName();
+            String value = this.cookie.getValue();
+            if(name == null || name.isEmpty()) {
+                throw new IllegalStateException("Cookie without name");
+            }
+            if(value == null || value.isEmpty()) {
+                throw new IllegalStateException("Cookie without value");
+            }
+            return this.cookie;
+        }
     }
 }
