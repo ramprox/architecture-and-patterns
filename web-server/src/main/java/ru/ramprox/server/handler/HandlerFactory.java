@@ -19,7 +19,7 @@ public class HandlerFactory {
         objects = initialize();
     }
 
-    private Map<Class<?>, Object> initialize() {
+    protected Map<Class<?>, Object> initialize() {
         Map<Class<?>, Object> result = new HashMap<>();
         RequestHandler h1 = new LastHandler(serviceFactory.get(ResourceResolver.class),
                 serviceFactory.get(ContentTypeResolver.class),

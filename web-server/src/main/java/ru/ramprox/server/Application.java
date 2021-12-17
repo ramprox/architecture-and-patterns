@@ -3,12 +3,7 @@ package ru.ramprox.server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.ramprox.server.config.Environment;
-import ru.ramprox.server.dispatcher.DispatcherRequestFactory;
-import ru.ramprox.server.handler.HandlerFactory;
-import ru.ramprox.server.service.interfaces.RequestParser;
-import ru.ramprox.server.service.simpleserviceimpl.ServiceFactory;
 import ru.ramprox.server.webserver.Server;
-import ru.ramprox.server.webserver.ServerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,10 +21,10 @@ public class Application {
      * Запуск приложения
      * @param args - аргументы командной строки
      */
-    public static void run(String[] args) {
+    public static void run(String... args) {
         printBanner();
         Environment.loadSettings(args);
-        Factory factory = new Factory();
+        Factory factory = Factory.createFactory();
         Server server = factory.getServerFactory().getServer();
         Runtime.getRuntime().addShutdownHook(new Thread(server::stop));
         server.start();

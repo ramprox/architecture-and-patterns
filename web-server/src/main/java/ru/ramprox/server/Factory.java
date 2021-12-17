@@ -5,14 +5,14 @@ import ru.ramprox.server.handler.HandlerFactory;
 import ru.ramprox.server.service.simpleserviceimpl.ServiceFactory;
 import ru.ramprox.server.webserver.ServerFactory;
 
-public class Factory {
+class Factory {
 
     private ServiceFactory serviceFactory;
     private HandlerFactory handlerFactory;
     private DispatcherRequestFactory dispatcherRequestFactory;
     private ServerFactory serverFactory;
 
-    public Factory() {
+    private Factory() {
         this.serviceFactory = new ServiceFactory();
         this.handlerFactory = new HandlerFactory(serviceFactory);
         this.dispatcherRequestFactory =
@@ -20,19 +20,23 @@ public class Factory {
         this.serverFactory = new ServerFactory(dispatcherRequestFactory);
     }
 
-    public ServiceFactory getServiceFactory() {
+    static Factory createFactory() {
+        return new Factory();
+    }
+
+    ServiceFactory getServiceFactory() {
         return serviceFactory;
     }
 
-    public HandlerFactory getHandlerFactory() {
+    HandlerFactory getHandlerFactory() {
         return handlerFactory;
     }
 
-    public DispatcherRequestFactory getDispatcherRequestFactory() {
+    DispatcherRequestFactory getDispatcherRequestFactory() {
         return dispatcherRequestFactory;
     }
 
-    public ServerFactory getServerFactory() {
+    ServerFactory getServerFactory() {
         return serverFactory;
     }
 }

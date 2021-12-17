@@ -3,16 +3,13 @@ package ru.ramprox.server.service.simpleserviceimpl;
 import ru.ramprox.server.config.PropertyName;
 import ru.ramprox.server.service.interfaces.ResourceReader;
 
-import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.nio.file.*;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Класс для чтения статического контента

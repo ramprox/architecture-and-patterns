@@ -26,6 +26,7 @@ public class Environment {
      * Происходит чтение и установка свойств
      */
     public static void loadSettings(String[] commandLineArgs) {
+
         loadDefaultSettings();
         loadFromClassPath();
         loadFromCommandLineArgs(commandLineArgs);
@@ -35,9 +36,9 @@ public class Environment {
      * Установка настроек по умолчанию
      */
     private static void loadDefaultSettings() {
-        properties.setProperty(PropertyName.PORT, Integer.toString(DefaultSettings.DEFAULT_PORT));
-        properties.setProperty(PropertyName.PATH_TO_STATIC, DefaultSettings.DEFAULT_PATH_TO_STATIC);
-        properties.setProperty(PropertyName.PATH_TO_SESSIONS, DefaultSettings.DEFAULT_PATH_TO_SESSIONS);
+        properties.setProperty(PropertyName.PORT, Integer.toString(DefaultSettings.SERVER_PORT));
+        properties.setProperty(PropertyName.PATH_TO_STATIC, DefaultSettings.PATH_TO_STATIC);
+        properties.setProperty(PropertyName.PATH_TO_SESSIONS, DefaultSettings.PATH_TO_SESSIONS);
     }
 
     /**
@@ -47,7 +48,7 @@ public class Environment {
     private static void loadFromClassPath() {
         try {
             InputStream stream = Environment.class.getResourceAsStream(
-                    DefaultSettings.DEFAULT_PATH_TO_CONFIG.substring(PropertyName.CLASSPATH_PREFIX.length()));
+                    DefaultSettings.CONFIG_LOCATION.substring(PropertyName.CLASSPATH_PREFIX.length()));
             if (stream != null) {
                 properties.load(stream);
             }
