@@ -2,42 +2,44 @@ package ru.ramprox.server.dispatcher;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.ramprox.server.annotation.Component;
+import ru.ramprox.server.annotation.Inject;
 import ru.ramprox.server.handler.*;
 import ru.ramprox.server.model.HttpRequest;
 import ru.ramprox.server.model.HttpResponse;
 import ru.ramprox.server.service.interfaces.Channel;
 import ru.ramprox.server.service.interfaces.RequestParser;
 import ru.ramprox.server.service.interfaces.ResponseConverter;
-import ru.ramprox.server.service.simpleserviceimpl.ServiceFactory;
+import ru.ramprox.server.service.simpleserviceimpl.SocketChannel;
 
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Queue;
 
+@Component
 class DispatcherRequestImpl implements DispatcherRequest {
 
     private final RequestParser requestParser;
     private final ExceptionHandler exceptionHandler;
     private final ResponseConverter responseConverter;
     private final RequestHandler handler;
-    private final ServiceFactory serviceFactory;
 
     private static final Logger logger = LoggerFactory.getLogger(DispatcherRequestImpl.class);
 
+    @Inject
     DispatcherRequestImpl(RequestParser requestParser,
                           ResponseConverter responseConverter,
                           ExceptionHandler exceptionHandler,
-                          RequestHandler handler, ServiceFactory serviceFactory) {
+                          RequestHandler handler) {
         this.requestParser = requestParser;
         this.responseConverter = responseConverter;
         this.exceptionHandler = exceptionHandler;
         this.handler = handler;
-        this.serviceFactory = serviceFactory;
     }
 
     @Override
     public void dispatchRequest(Socket socket) {
-        try (Channel channel = serviceFactory.getChannel(socket)) {
+        try (Channel channel = getChannel(socket)) {
             Queue<String> stringRequest = channel.readRequest();
             if (stringRequest != null) {
                 HttpResponse response = handleRequest(stringRequest);
@@ -58,15 +60,19 @@ class DispatcherRequestImpl implements DispatcherRequest {
         }
     }
 
+    protected Channel getChannel(Socket socket) throws IOException {
+        return new SocketChannel(socket);
+    }
+
     private HttpResponse handleRequest(Queue<String> stringRequest) throws Exception {
         HttpRequest request = requestParser.parseRequest(stringRequest);
-        HttpResponse.Builder responseBuilder = new HttpResponse.Builder();
+        HttpResponse response = null;
         try {
-            handler.handle(request, responseBuilder);
+            response = handler.handle(request);
         } catch (Exception ex) {
-            exceptionHandler.handle(request,responseBuilder, ex);
+            response = exceptionHandler.handle(request, ex);
         }
-        return responseBuilder.build();
+        return response;
     }
 
     /**

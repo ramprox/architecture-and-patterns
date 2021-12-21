@@ -1,6 +1,8 @@
 package ru.ramprox;
 
 import ru.ramprox.server.Application;
+import ru.ramprox.server.factory.context.Context;
+import ru.ramprox.server.webserver.Server;
 
 public class MainApp {
     /**
@@ -9,6 +11,9 @@ public class MainApp {
      * @param args - аргументы командной строки
      */
     public static void main(String[] args) {
-        Application.run(args);
+        Context context = Application.run(args);
+        Server server = context.get(Server.class);
+        Runtime.getRuntime().addShutdownHook(new Thread(server::stop));
+        server.start();
     }
 }

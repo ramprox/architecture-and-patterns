@@ -1,5 +1,6 @@
 package ru.ramprox.server.service.simpleserviceimpl;
 
+import ru.ramprox.server.annotation.Component;
 import ru.ramprox.server.model.Cookie;
 import ru.ramprox.server.model.HttpResponse;
 import ru.ramprox.server.model.ResponseHeaderName;
@@ -10,6 +11,7 @@ import java.util.Set;
 /**
  * Класс, формирующий ответ клиенту
  */
+@Component
 class ResponseHeaderConverter implements ResponseConverter {
 
     private static final String HTTP_1_1 = "HTTP/1.1";

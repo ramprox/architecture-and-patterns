@@ -1,5 +1,8 @@
 package ru.ramprox.server.handler;
 
+import ru.ramprox.server.annotation.Component;
+import ru.ramprox.server.annotation.Handler;
+import ru.ramprox.server.annotation.Inject;
 import ru.ramprox.server.model.*;
 import ru.ramprox.server.service.interfaces.ContentTypeResolver;
 import ru.ramprox.server.service.interfaces.ResourceReader;
@@ -10,13 +13,16 @@ import java.io.IOException;
 /**
  * Класс обработчика запросов
  */
-class LastHandler implements RequestHandler {
+@Component(name = "mainHandler")
+@Handler(order = 3)
+class MainHandler implements RequestHandler {
 
     private final ResourceResolver resourceResolver;
     private final ContentTypeResolver contentTypeResolver;
     private final ResourceReader resourceReader;
 
-    LastHandler(ResourceResolver resourceResolver,
+    @Inject
+    MainHandler(ResourceResolver resourceResolver,
                 ContentTypeResolver contentTypeResolver,
                 ResourceReader resourceReader) {
         this.resourceResolver = resourceResolver;
@@ -35,10 +41,13 @@ class LastHandler implements RequestHandler {
      * содержимое статического ресурса, если он найден
      * @throws IOException - возникает при ошибках во время чтения статического ресурса
      */
-    public void handle(HttpRequest request, HttpResponse.Builder responseBuilder) throws IOException {
+    public HttpResponse handle(HttpRequest request) throws IOException {
         if (request.getType() == HttpRequest.RequestType.GET) {
-            handleGetRequest(request, responseBuilder);
+            return handleGetRequest(request);
         }
+        return new HttpResponse.Builder()
+                .withStatus(HttpResponseStatus.METHOD_NOT_ALLOWED)
+                .build();
     }
 
     /**
@@ -49,19 +58,21 @@ class LastHandler implements RequestHandler {
      * содержимое статического ресурса, если он найден
      * @throws IOException - возникает при ошибках во время чтения статического ресурса
      */
-    private void handleGetRequest(HttpRequest request, HttpResponse.Builder responseBuilder) throws IOException {
+    private HttpResponse handleGetRequest(HttpRequest request) throws IOException {
         String pathToResource = resourceResolver.resolve(request.getResource());
         String contentType = contentTypeResolver.resolve(pathToResource);
         Object body = null;
+        HttpResponse.Builder builder = new HttpResponse.Builder();
         if (contentType.contains("text")) {
             body = resourceReader.read(pathToResource);
-            responseBuilder.withHeader(ResponseHeaderName.CONTENT_TYPE, contentType + "; charset=utf-8");
+            builder.withHeader(ResponseHeaderName.CONTENT_TYPE, contentType + "; charset=utf-8");
         } else if (contentType.contains("image")) {
             body = resourceReader.readBytes(pathToResource);
-            responseBuilder.withHeader(ResponseHeaderName.CONTENT_TYPE, contentType);
+            builder.withHeader(ResponseHeaderName.CONTENT_TYPE, contentType);
         }
-        responseBuilder
+        return builder
                 .withStatus(HttpResponseStatus.OK)
-                .withBody(body);
+                .withBody(body)
+                .build();
     }
 }

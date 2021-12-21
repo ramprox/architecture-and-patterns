@@ -1,6 +1,10 @@
 package ru.ramprox.server.handler;
 
-import ru.ramprox.server.config.Environment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.ramprox.server.annotation.Component;
+import ru.ramprox.server.annotation.Inject;
+import ru.ramprox.server.annotation.Value;
 import ru.ramprox.server.config.PropertyName;
 import ru.ramprox.server.model.*;
 import ru.ramprox.server.service.interfaces.ContentTypeResolver;
@@ -13,12 +17,19 @@ import java.io.IOException;
 /**
  * Класс, обрабатывающий исключения
  */
+@Component
 class ExceptionHandlerImpl implements ExceptionHandler {
 
     private final ResourceResolver resourceResolver;
     private final ResourceReader resourceReader;
     private final ContentTypeResolver contentTypeResolver;
 
+    @Value(name = PropertyName.PAGE_NOT_FOUND)
+    private String pageNotFound;
+
+    private static final Logger logger = LoggerFactory.getLogger(ExceptionHandlerImpl.class);
+
+    @Inject
     ExceptionHandlerImpl(ResourceResolver resourceResolver,
                          ContentTypeResolver contentTypeResolver,
                          ResourceReader resourceReader) {
@@ -36,11 +47,13 @@ class ExceptionHandlerImpl implements ExceptionHandler {
      * @throws Exception - необработанное исключение
      */
     @Override
-    public void handle(HttpRequest request, HttpResponse.Builder responseBuilder, Exception ex) throws Exception {
+    public HttpResponse handle(HttpRequest request, Exception ex) {
         if (ex instanceof FileNotFoundException) {
-            handleFileNotFoundException(request, responseBuilder);
+            return handleFileNotFoundException(request);
         }
-        throw ex;
+        return new HttpResponse.Builder()
+                .withStatus(HttpResponseStatus.METHOD_NOT_ALLOWED)
+                .build();
     }
 
     /**
@@ -58,38 +71,23 @@ class ExceptionHandlerImpl implements ExceptionHandler {
      * @param request - Запрос, при котором возникло данное исключение
      * @return ответ на возникшее исключение
      */
-    private void handleFileNotFoundException(HttpRequest request, HttpResponse.Builder responseBuilder) {
-        responseBuilder.withHeader(ResponseHeaderName.Status, HttpResponseStatus.NOT_FOUND);
-        if (request.getHeader(RequestHeaderName.REFERER) != null) {
-            return;
+    private HttpResponse handleFileNotFoundException(HttpRequest request) {
+
+        HttpResponse.Builder builder = new HttpResponse.Builder();
+        builder.withHeader(ResponseHeaderName.Status, HttpResponseStatus.NOT_FOUND);
+        if (request.getHeader(RequestHeaderName.REFERER) != null || pageNotFound.isEmpty()) {
+            return builder.build();
         }
-        String notFoundPage = getNotFoundPage();
-        if (notFoundPage.isEmpty()) {
-            return;
-        }
-        String path = resourceResolver.resolve(notFoundPage);
+        String path = resourceResolver.resolve(pageNotFound);
         try {
             String body = resourceReader.read(path);
-            responseBuilder
+            builder
                     .withBody(body)
                     .withHeader(ResponseHeaderName.CONTENT_TYPE,
                             contentTypeResolver.resolve(path) + "; charset=utf-8");
         } catch (IOException e) {
-
+            logger.error("Error read 'Not found' page {}: {}", pageNotFound, e.getMessage());
         }
-    }
-
-    /**
-     * Страница для отправки клиенту, если ресурс не найден
-     *
-     * @return объект типа String (Например, "/414.html"),
-     * содержащий ресурс для отправки клиенту если не найден запрашиваемый ресурс
-     */
-    private String getNotFoundPage() {
-        String notFoundPage = Environment.getProperty(PropertyName.PAGE_NOT_FOUND);
-        if (notFoundPage != null) {
-            return "/" + notFoundPage;
-        }
-        return "";
+        return builder.build();
     }
 }

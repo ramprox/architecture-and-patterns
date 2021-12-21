@@ -5,10 +5,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import ru.ramprox.server.config.Environment;
 import ru.ramprox.server.dispatcher.DispatcherRequest;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.Socket;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -17,10 +17,10 @@ import static org.mockito.Mockito.*;
 public class WebServerTest {
 
     @Mock
-    DispatcherRequest dispatcherRequest;
+    private DispatcherRequest dispatcherRequest;
 
     @Captor
-    ArgumentCaptor<Socket> captor;
+    private ArgumentCaptor<Socket> captor;
 
     /**
      * 1. Проверяется соединился ли клиент
@@ -29,12 +29,14 @@ public class WebServerTest {
      * 4. Проверяется, в другом ли потоке вызывается метод DispatcherRequestImpl.dispatchRequest
      */
     @Test
-    public void testStart() {
+    public void testStart() throws NoSuchFieldException, IllegalAccessException {
         MockitoAnnotations.openMocks(this);
         WebServer webServer = new WebServer(dispatcherRequest);
+        Field port = webServer.getClass().getDeclaredField("port");
+        port.setAccessible(true);
+        port.set(webServer, "8080");
         Thread workingServerThread = new Thread(webServer::start);
 
-        Environment.loadSettings(new String[]{"--server.port=8080"});
         doAnswer(invocation -> {
             Thread handleRequestThread = Thread.currentThread();
             assertNotEquals(handleRequestThread, workingServerThread);
