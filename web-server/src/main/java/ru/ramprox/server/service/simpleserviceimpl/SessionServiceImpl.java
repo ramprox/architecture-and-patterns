@@ -2,14 +2,11 @@ package ru.ramprox.server.service.simpleserviceimpl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.ramprox.server.annotation.Component;
-import ru.ramprox.server.annotation.Inject;
-import ru.ramprox.server.annotation.Value;
+import ru.ramprox.server.config.Environment;
 import ru.ramprox.server.config.PropertyName;
 import ru.ramprox.server.model.Session;
 import ru.ramprox.server.service.interfaces.SessionService;
 
-import javax.annotation.PostConstruct;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,20 +16,15 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
 
-@Component
 class SessionServiceImpl implements SessionService {
 
     private Map<UUID, Session> sessions = new ConcurrentHashMap<>();
 
     private ScheduledExecutorService executorService;
-    private final Semaphore semaphore = new Semaphore(1);
+    private Semaphore semaphore = new Semaphore(1);
     private static final Logger logger = LoggerFactory.getLogger(SessionServiceImpl.class);
 
-    @Value(name = PropertyName.PATH_TO_SESSIONS)
-    private String pathToSession;
-
-    @PostConstruct
-    public void init() {
+    SessionServiceImpl() {
         createSessionStorage();
         loadSessionsFromStorage();
         Runtime.getRuntime().addShutdownHook(new Thread(this::saveSessionsInStorage));
@@ -54,7 +46,7 @@ class SessionServiceImpl implements SessionService {
      * Создание хранилища для сессии
      */
     private void createSessionStorage() {
-        Path pathToSessionStorage = Paths.get(pathToSession);
+        Path pathToSessionStorage = Paths.get(Environment.getProperty(PropertyName.PATH_TO_SESSIONS));
         if(!Files.exists(pathToSessionStorage)) {
             try {
                 Files.createDirectory(pathToSessionStorage.getParent());
@@ -69,7 +61,7 @@ class SessionServiceImpl implements SessionService {
      * Загрузка сессии из хранилища
      */
     private void loadSessionsFromStorage() {
-        File file = new File(pathToSession);
+        File file = new File(Environment.getProperty(PropertyName.PATH_TO_SESSIONS));
         if(file.length() > 0) {
             try (InputStream is = new FileInputStream(file);
                  ObjectInputStream oos = new ObjectInputStream(is)) {
@@ -93,7 +85,7 @@ class SessionServiceImpl implements SessionService {
         } catch (InterruptedException e) {
             logger.error("Interrupted exception");
         }
-        File file = new File(pathToSession);
+        File file = new File(Environment.getProperty(PropertyName.PATH_TO_SESSIONS));
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
             logger.info("Saving sessions data in storage");
             oos.writeObject(sessions);

@@ -17,14 +17,14 @@ import java.util.Queue;
 /**
  * Класс инкапсулирующий канал для чтения запроса и отправки ответа клиенту
  */
-public class SocketChannel implements Channel {
+class SocketChannel implements Channel {
 
     private final BufferedReader in;
     private final OutputStream out;
 
     private static final Logger logger = LoggerFactory.getLogger(SocketChannel.class);
 
-    public SocketChannel(Socket socket) throws IOException {
+    SocketChannel(Socket socket) throws IOException {
         try {
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream(),
                     StandardCharsets.UTF_8));

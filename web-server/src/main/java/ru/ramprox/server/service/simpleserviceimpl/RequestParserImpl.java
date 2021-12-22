@@ -2,7 +2,6 @@ package ru.ramprox.server.service.simpleserviceimpl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.ramprox.server.annotation.Component;
 import ru.ramprox.server.model.*;
 import ru.ramprox.server.service.interfaces.RequestParser;
 
@@ -12,7 +11,6 @@ import java.util.stream.Collectors;
 /**
  * Класс, который парсит запрос
  */
-@Component
 class RequestParserImpl implements RequestParser {
 
     private static final Logger logger = LoggerFactory.getLogger(RequestParserImpl.class);

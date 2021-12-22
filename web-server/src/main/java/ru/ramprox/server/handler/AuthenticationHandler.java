@@ -2,23 +2,17 @@ package ru.ramprox.server.handler;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.ramprox.server.annotation.Component;
 import ru.ramprox.server.annotation.Handler;
-import ru.ramprox.server.annotation.Inject;
-import ru.ramprox.server.annotation.Value;
+import ru.ramprox.server.config.Environment;
 import ru.ramprox.server.config.PropertyName;
 import ru.ramprox.server.model.*;
 import ru.ramprox.server.service.interfaces.SessionService;
 
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Класс,ответственный за аутентификацию клиента
  */
-@Component(name = "authenticationHandler")
 @Handler(order = 2)
 class AuthenticationHandler implements RequestHandler {
 
@@ -28,24 +22,18 @@ class AuthenticationHandler implements RequestHandler {
     private static final String USER_ATTRIBUTE = "User";
     private static final String REQUESTED_PAGE_ATTRIBUTE = "Requested page";
 
-    @Value(name = PropertyName.LOGIN_PROCESSING_PAGE, defaultValue = "/login_processing")
-    private String loginProcessingPage;
-
-    @Value(name = PropertyName.MAIN_PAGE, defaultValue = "/index.html")
-    private String mainPage;
-
-    @Value(name = PropertyName.LOGIN_PAGE, defaultValue = "/login.html")
-    private String loginPage;
-
-    @Value(name = PropertyName.PAGES_REQUIRED_AUTH)
+    private static final String LOGIN_PROCESSING_PAGE = "/login_processing";
+    private static final String MAIN_PAGE = "/index.html";
+    private static final String LOGIN_PAGE = "/login.html";
     private Set<String> pagesRequiredAuthentication = new HashSet<>();
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationHandler.class);
 
-    @Inject
     AuthenticationHandler(SessionService sessionService, RequestHandler nextHandler) {
         this.nextHandler = nextHandler;
         this.sessionService = sessionService;
+        String[] authPages = Environment.getProperty(PropertyName.PAGES_REQUIRED_AUTH).split(";");
+        Arrays.stream(authPages).forEach(page -> pagesRequiredAuthentication.add(page));
     }
 
     /**
@@ -58,7 +46,7 @@ class AuthenticationHandler implements RequestHandler {
     public HttpResponse handle(HttpRequest request) throws Exception {
 
         Optional<Cookie> cookie = getCookieByName(request.getCookies(), Cookie.JSESSION_ID);
-        if(request.getResource().equals(loginProcessingPage)) {
+        if(request.getResource().equals(LOGIN_PROCESSING_PAGE)) {
             return loginProcessing(request, cookie.get());
         }
         if(pagesRequiredAuthentication.contains(request.getResource())) {
@@ -83,7 +71,7 @@ class AuthenticationHandler implements RequestHandler {
         if (requestedPage != null) {
             return redirectToPage(requestedPage);
         }
-        return redirectToPage(mainPage);
+        return redirectToPage(MAIN_PAGE);
     }
 
     /**
@@ -100,7 +88,7 @@ class AuthenticationHandler implements RequestHandler {
             return nextHandler.handle(request);
         }
         session.addAttribute(REQUESTED_PAGE_ATTRIBUTE, request.getResource());
-        return redirectToPage(loginPage);
+        return redirectToPage(LOGIN_PAGE);
     }
 
     private HttpResponse redirectToPage(String page) {

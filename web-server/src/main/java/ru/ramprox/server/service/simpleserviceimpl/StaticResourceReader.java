@@ -1,9 +1,5 @@
 package ru.ramprox.server.service.simpleserviceimpl;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import ru.ramprox.server.annotation.Component;
-import ru.ramprox.server.config.Prefixes;
 import ru.ramprox.server.config.PropertyName;
 import ru.ramprox.server.service.interfaces.ResourceReader;
 
@@ -11,8 +7,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,10 +15,8 @@ import java.nio.file.Paths;
 /**
  * Класс для чтения статического контента
  */
-@Component
 class StaticResourceReader implements ResourceReader {
 
-    private static final Logger logger = LoggerFactory.getLogger(StaticResourceReader.class);
 
     /**
      * Читает текстовый статический контент
@@ -47,7 +39,7 @@ class StaticResourceReader implements ResourceReader {
         if(path.endsWith("/")) {
             throw new FileNotFoundException(path);
         }
-        if (path.startsWith(Prefixes.CLASSPATH)) {
+        if (path.startsWith(PropertyName.CLASSPATH_PREFIX)) {
             return readBytesFromClasspath(path);
         }
         return readBytesFromExternalResource(path);
@@ -55,26 +47,26 @@ class StaticResourceReader implements ResourceReader {
 
     /**
      * Чтение в байтов из classpath
-     * @param pathToResource - путь к ресурсу
+     * @param path - путь к ресурсу
      * @return - прочитанные байты
      * @throws IOException
      */
-    private byte[] readBytesFromClasspath(String pathToResource) throws IOException {
-        String subStr = pathToResource.substring(Prefixes.CLASSPATH.length());
+    private byte[] readBytesFromClasspath(String path) throws IOException {
+        String subStr = path.substring(PropertyName.CLASSPATH_PREFIX.length());
         InputStream is = this.getClass().getResourceAsStream(subStr);
         if(is == null) {
-            throw new FileNotFoundException(pathToResource);
+            throw new FileNotFoundException(path);
         }
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int nRead;
-        byte[] data = new byte[4];
+        byte[] data = new byte[8196];
         while((nRead = is.read(data, 0, data.length)) != -1) {
-            buffer.write(data, 0, nRead);
+            baos.write(data, 0, nRead);
         }
-        buffer.flush();
-        byte[] result = buffer.toByteArray();
+        baos.flush();
+        byte[] result = baos.toByteArray();
         is.close();
-        buffer.close();
+        baos.close();
         return result;
     }
 

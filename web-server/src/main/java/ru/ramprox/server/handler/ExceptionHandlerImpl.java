@@ -2,9 +2,7 @@ package ru.ramprox.server.handler;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.ramprox.server.annotation.Component;
-import ru.ramprox.server.annotation.Inject;
-import ru.ramprox.server.annotation.Value;
+import ru.ramprox.server.config.Environment;
 import ru.ramprox.server.config.PropertyName;
 import ru.ramprox.server.model.*;
 import ru.ramprox.server.service.interfaces.ContentTypeResolver;
@@ -17,25 +15,24 @@ import java.io.IOException;
 /**
  * Класс, обрабатывающий исключения
  */
-@Component
 class ExceptionHandlerImpl implements ExceptionHandler {
 
     private final ResourceResolver resourceResolver;
     private final ResourceReader resourceReader;
     private final ContentTypeResolver contentTypeResolver;
 
-    @Value(name = PropertyName.PAGE_NOT_FOUND)
     private String pageNotFound;
 
     private static final Logger logger = LoggerFactory.getLogger(ExceptionHandlerImpl.class);
 
-    @Inject
     ExceptionHandlerImpl(ResourceResolver resourceResolver,
                          ContentTypeResolver contentTypeResolver,
                          ResourceReader resourceReader) {
         this.resourceResolver = resourceResolver;
         this.contentTypeResolver = contentTypeResolver;
         this.resourceReader = resourceReader;
+        String propertyPageNotFound = Environment.getProperty(PropertyName.PAGE_NOT_FOUND);
+        pageNotFound = propertyPageNotFound != null ? propertyPageNotFound : "";
     }
 
     /**
@@ -74,7 +71,7 @@ class ExceptionHandlerImpl implements ExceptionHandler {
     private HttpResponse handleFileNotFoundException(HttpRequest request) {
 
         HttpResponse.Builder builder = new HttpResponse.Builder();
-        builder.withHeader(ResponseHeaderName.Status, HttpResponseStatus.NOT_FOUND);
+        builder.withStatus(HttpResponseStatus.NOT_FOUND);
         if (request.getHeader(RequestHeaderName.REFERER) != null || pageNotFound.isEmpty()) {
             return builder.build();
         }

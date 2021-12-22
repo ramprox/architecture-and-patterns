@@ -2,9 +2,7 @@ package ru.ramprox.server.webserver;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.ramprox.server.annotation.Component;
-import ru.ramprox.server.annotation.Inject;
-import ru.ramprox.server.annotation.Value;
+import ru.ramprox.server.config.Environment;
 import ru.ramprox.server.config.PropertyName;
 import ru.ramprox.server.dispatcher.DispatcherRequest;
 
@@ -15,19 +13,14 @@ import java.net.SocketException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Component
 class WebServer implements Server {
 
     private final DispatcherRequest dispatcherRequest;
     private ServerSocket serverSocket;
-    private final ExecutorService executorService;
-
-    @Value(name = PropertyName.SERVER_PORT, defaultValue = "8080")
-    private String port;
+    private ExecutorService executorService;
 
     private static final Logger logger = LoggerFactory.getLogger(WebServer.class);
 
-    @Inject
     WebServer(DispatcherRequest dispatcherRequest) {
         this.dispatcherRequest = dispatcherRequest;
         executorService = Executors.newCachedThreadPool();
@@ -40,7 +33,7 @@ class WebServer implements Server {
      */
     public void start() {
         try {
-            int port = Integer.parseInt(this.port);
+            int port = Integer.parseInt(Environment.getProperty(PropertyName.PORT));
             serverSocket = new ServerSocket(port);
             logger.info("Server started on port: {}!", port);
             while (true) {

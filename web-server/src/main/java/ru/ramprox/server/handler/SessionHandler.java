@@ -1,8 +1,6 @@
 package ru.ramprox.server.handler;
 
-import ru.ramprox.server.annotation.Component;
 import ru.ramprox.server.annotation.Handler;
-import ru.ramprox.server.annotation.Inject;
 import ru.ramprox.server.model.*;
 import ru.ramprox.server.service.interfaces.SessionService;
 
@@ -13,14 +11,12 @@ import java.util.UUID;
 /**
  * Класс, отвечающий за обработку запросов с сессией
  */
-@Component(name = "sessionHandler")
 @Handler(order = 1)
 class SessionHandler implements RequestHandler {
 
     private final SessionService sessionService;
     private final RequestHandler nextHandler;
 
-    @Inject
     SessionHandler(SessionService sessionService, RequestHandler nextHandler) {
         this.sessionService = sessionService;
         this.nextHandler = nextHandler;

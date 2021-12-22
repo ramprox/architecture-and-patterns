@@ -1,9 +1,10 @@
 package ru.ramprox.server.handler;
 
-import ru.ramprox.server.annotation.Component;
 import ru.ramprox.server.annotation.Handler;
-import ru.ramprox.server.annotation.Inject;
-import ru.ramprox.server.model.*;
+import ru.ramprox.server.model.HttpRequest;
+import ru.ramprox.server.model.HttpResponse;
+import ru.ramprox.server.model.HttpResponseStatus;
+import ru.ramprox.server.model.ResponseHeaderName;
 import ru.ramprox.server.service.interfaces.ContentTypeResolver;
 import ru.ramprox.server.service.interfaces.ResourceReader;
 import ru.ramprox.server.service.interfaces.ResourceResolver;
@@ -13,7 +14,6 @@ import java.io.IOException;
 /**
  * Класс обработчика запросов
  */
-@Component(name = "mainHandler")
 @Handler(order = 3)
 class MainHandler implements RequestHandler {
 
@@ -21,7 +21,6 @@ class MainHandler implements RequestHandler {
     private final ContentTypeResolver contentTypeResolver;
     private final ResourceReader resourceReader;
 
-    @Inject
     MainHandler(ResourceResolver resourceResolver,
                 ContentTypeResolver contentTypeResolver,
                 ResourceReader resourceReader) {

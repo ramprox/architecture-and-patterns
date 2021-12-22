@@ -1,12 +1,11 @@
 package ru.ramprox.server.service.simpleserviceimpl;
 
-import ru.ramprox.server.annotation.Component;
 import ru.ramprox.server.service.interfaces.ContentTypeResolver;
 
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
 class ContentTypeResolverImpl implements ContentTypeResolver {
 
     private static final String APPLICATION_JSON = "application/json";
