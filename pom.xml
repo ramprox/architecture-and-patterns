@@ -17,6 +17,7 @@
     <modules>
         <module>web-server</module>
         <module>kamranahmedse</module>
+        <module>examples</module>
     </modules>
 
 </project>
