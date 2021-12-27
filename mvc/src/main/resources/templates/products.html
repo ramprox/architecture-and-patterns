@@ -1,0 +1,82 @@
+<!--<!doctype html>-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/common :: head('Products')"></head>
+<body>
+<div class="container" style="min-width: 700px;">
+    <div th:replace="fragments/common :: header"></div>
+    <div th:replace="fragments/common :: navigation"></div>
+    <div class="row mb-3 mx-0">
+
+        <div class="col-lg-3 p-1 h-100 flex-column">
+            <form class="form-group m-0" th:method="get" th:with="name_param=${param.productName},
+                        minprice_param=${param.minPrice}, maxprice_param=${param.maxPrice}">
+                <div class="bg-light rounded border border-info shadow">
+                    <div class="card-header bg-info text-white">Filters</div>
+                    <div class="p-2">
+                        <div th:replace="fragments/table :: filter('productName', 'Name', ${name_param})"></div>
+                        <div th:replace="fragments/table :: filter('minPrice', 'Min price', ${minprice_param})"></div>
+                        <div th:replace="fragments/table :: filter('maxPrice', 'Max price', ${maxprice_param})"></div>
+                        <button type="submit" class="btn btn-primary">Apply</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-9 p-1">
+            <div class="bg-light rounded border border-info p-2 shadow">
+                <a class="btn btn-primary mb-2" th:href="@{/product/new}">Add Product</a>
+                <table class="table table-bordered mb-3">
+                    <thead class="bg-info">
+                    <tr>
+                        <th th:replace="fragments/table :: header('Id', 'id')"></th>
+                        <th th:replace="fragments/table :: header('Name', 'name')"></th>
+                        <th th:replace="fragments/table :: header('Cost', 'price')"></th>
+                        <th scope="col" class="text-white">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${products.hasContent()}" th:each="product : ${products.content}">
+                        <th scope="row" th:text="${product.id}">1</th>
+                        <td th:text="${product.name}">Name</td>
+                        <td th:text="${product.price}">Cost 1</td>
+                        <td style="min-width: 120px;">
+                            <a class="btn btn-success" th:href="@{product/{id}(id = ${product.id})}">
+                                <i class="fas fa-edit"></i></a>
+                            <form class="d-inline" th:method="delete" th:action="@{/product/{id}(id = ${product.id})}">
+                                <button type="submit" class="btn btn-danger"><i class="far fa-trash-alt"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr th:unless="${products.hasContent()}">
+                        <td colspan="4">No data</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="col-12" th:if="${products.hasContent()}">
+                    <nav aria-label="...">
+                        <ul class="pagination">
+                            <li class="page-item"
+                                th:classappend="${products.isFirst()} ? 'disabled'">
+                                <a th:replace="fragments/table :: paging_page('Previous', ${products.number})"></a>
+                            </li>
+
+                            <li class="page-item"
+                                th:each="num : ${#numbers.sequence(1, products.totalPages)}"
+                                th:classappend="${num == products.number + 1} ? 'active'">
+                                <a th:replace="fragments/table :: paging_page(${num}, ${num})"></a>
+                            </li>
+
+                            <li class="page-item"
+                                th:classappend="${products.isLast()} ? 'disabled'">
+                                <a th:replace="fragments/table :: paging_page('Next', ${products.number + 2})"></a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<th:block th:insert="fragments/common :: end_scripts"></th:block>
+</html>

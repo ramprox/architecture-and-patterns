@@ -18,6 +18,7 @@
         <module>web-server</module>
         <module>kamranahmedse</module>
         <module>examples</module>
+        <module>mvc</module>
     </modules>
 
 </project>

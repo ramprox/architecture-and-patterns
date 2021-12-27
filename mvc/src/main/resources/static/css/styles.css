@@ -1,0 +1,9 @@
+body {
+    background-image: url(../images/bg_page.png);
+}
+
+.nav-item:hover {
+    background: linear-gradient(0deg, #ccc, #f8f9fa, #ccc);
+    font-weight: 600;
+    color: green;
+}

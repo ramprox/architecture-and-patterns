@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/common :: head('Edit product')"></head>
+<body>
+<div class="container">
+    <header th:replace="fragments/common :: header"/>
+    <nav th:replace="fragments/common :: navigation"></nav>
+    <div class="row mb-3 mx-0 px-1">
+        <div class="col-md-12 bg-light rounded border border-info shadow py-3">
+            <form th:action="@{/product}" method="post" th:object="${product}">
+                <input type="hidden" id="id" th:field="*{id}">
+                <div class="form-group">
+                    <label>Product name</label>
+                    <input type="text" class="form-control" id="name" th:field="*{name}"
+                           placeholder="Enter product name">
+                    <p class="text-danger" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+                </div>
+                <div class="row">
+                    <div class="form-group col">
+                        <label>Cost</label>
+                        <input type="text" class="form-control" id="price" th:field="*{price}"
+                               placeholder="Enter product price">
+                        <p class="text-danger" th:if="${#fields.hasErrors('price')}" th:errors="*{price}"></p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea class="form-control" id="description" th:field="*{description}"
+                              placeholder="Description" rows="8"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+<th:block th:insert="fragments/common :: end_scripts"></th:block>
+</html>

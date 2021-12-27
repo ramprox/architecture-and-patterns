@@ -1,0 +1,23 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<th th:fragment="header(title, sort_column)" class="text-white">[[${title}]]
+    <a class="text-dark"
+       th:href="@{/product(productName = ${param.productName}, minPrice = ${param.minPrice}, maxPrice = ${param.maxPrice},
+                page = ${products.number + 1}, size = ${products.size}, sortBy = ${sort_column},
+                direction = (!${param.direction} or ${#strings.equals(param.direction, 'asc')}
+                or !${#strings.equalsIgnoreCase(title, param.sortBy)}) ? 'desc' : 'asc')}">
+        <i class="fa " th:classappend="(${#strings.equalsIgnoreCase(title, param.sortBy)}
+                and ${#strings.equals(param.direction, 'desc')}) ? 'fa-sort-up' : 'fa-sort-down'"></i></a>
+</th>
+
+<a th:fragment="paging_page(text, page_number)" class="page-link"
+   th:href="@{/product(productName=${param.productName}, minPrice=${param.minPrice}, maxPrice=${param.maxPrice},
+            page=${page_number}, size=${products.size},  sortBy=${param.sortBy},
+            direction=${param.direction})}">[[${text}]]</a>
+
+<div th:fragment="filter(filterName, input_text, param_value)" class="mb-3">
+    <label th:for="${filterName}" class="sr-only">[[${input_text}]]</label>
+    <input type="text" class="form-control" th:id="${filterName}" th:value="${param_value}"
+           th:name="${filterName}" th:placeholder="${input_text}">
+</div>
+</html>
